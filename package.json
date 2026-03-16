@@ -11,11 +11,15 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.21",
+    "@walletconnect/ethereum-provider": "^2.23.8",
+    "@walletconnect/sign-client": "^2.23.8",
+    "@walletconnect/universal-provider": "^2.23.8",
     "next": "16.1.6",
+    "qr": "^0.5.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "viem": "^2.47.4",
-    "wagmi": "^3.5.0"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
