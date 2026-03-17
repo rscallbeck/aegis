@@ -1,5 +1,5 @@
 import { useAccount, useSignMessage } from 'wagmi';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabaseClient';
 
 export function useWeb3Login() {
   const { address } = useAccount();
@@ -12,7 +12,7 @@ export function useWeb3Login() {
       const message = `Sign in to Project Aegis with wallet: ${address}`;
       const signature = await signMessageAsync({ message });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SupabaseClient_URL}/functions/v1/verify-siwe`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-siwe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, signature, address }),
@@ -27,8 +27,8 @@ export function useWeb3Login() {
         // e.g., await SupabaseClient.auth.setSession(...)
         
         // This line satisfies ESLint by actually utilizing the imported client
-        const supabaseClient: SupabaseClient =  await createClient(`${process.env.NEXT_PUBLIC_SUPABASE_URL}`, `${process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY}`);
-        console.log("Current SupabaseClient Session:", supabaseClient);
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Current SupabaseClient Session:", session);
       }
     } catch (error) {
       console.error("SIWE Login Failed:", error);

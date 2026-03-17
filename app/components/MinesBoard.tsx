@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { initMinesGame } from '@/lib/game/minesConfig';
+import { initMinesGame } from '../lib/game/minesConfig';
+import Phaser from 'phaser';
 
 interface MinesBoardProps {
   onGameEvent?: (id: number) => void;
