@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import '@rainbow-me/rainbowkit/styles.css';
 import { 
   getDefaultConfig, 
@@ -17,7 +17,7 @@ const wagmiConfig = getDefaultConfig({
   appName: 'Project Aegis',
   projectId: projectId,
   chains: [base, polygon],
-  ssr: false, // 1. Turn off Wagmi SSR to prevent hydration mismatches
+  ssr: true, 
 });
 
 interface Web3ProviderProps {
@@ -26,15 +26,6 @@ interface Web3ProviderProps {
 
 export default function Web3Provider({ children }: Web3ProviderProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [mounted, setMounted] = useState(false);
-
-// 2. Only render the providers once the component mounts in the browser
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-  
-  if (!mounted) return null; 
 
   return (
     <WagmiProvider config={wagmiConfig}>

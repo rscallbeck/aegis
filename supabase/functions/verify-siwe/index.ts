@@ -2,7 +2,18 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyMessage } from "https://esm.sh/viem@2.21.0";
 
+// 1. Define standard CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req: Request) => {
+  // 2. Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -26,13 +37,17 @@ serve(async (req: Request) => {
 
     if (error) throw error;
 
+    // 3. Attach CORS headers to the success response
     return new Response(JSON.stringify({ success: true, user: data.user }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err) {
-    // Fix: Check if err is an Error object to satisfy strict TS
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
+    // 4. Attach CORS headers to the error response
+    return new Response(JSON.stringify({ error: errorMessage }), { 
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 });
