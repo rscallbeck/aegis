@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '@rainbow-me/rainbowkit/styles.css';
 import { 
   getDefaultConfig, 
@@ -11,14 +11,13 @@ import { WagmiProvider } from 'wagmi';
 import { base, polygon } from 'wagmi/chains';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
-// You will need to get a free Project ID from cloud.walletconnect.com
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
 
 const wagmiConfig = getDefaultConfig({
   appName: 'Project Aegis',
   projectId: projectId,
   chains: [base, polygon],
-  ssr: true, // Crucial for Next.js 16 App Router hydration
+  ssr: false, // 1. Turn off Wagmi SSR to prevent hydration mismatches
 });
 
 interface Web3ProviderProps {
@@ -26,16 +25,23 @@ interface Web3ProviderProps {
 }
 
 export default function Web3Provider({ children }: Web3ProviderProps) {
-  // Instantiate QueryClient inside the component to ensure 
-  // data is not shared across different users during SSR.
   const [queryClient] = useState(() => new QueryClient());
+  const [mounted, setMounted] = useState(false);
+
+// 2. Only render the providers once the component mounts in the browser
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+  
+  if (!mounted) return null; 
 
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider 
           theme={darkTheme({
-            accentColor: '#10b981', // Emerald 500 - Matrix/Casino vibe
+            accentColor: '#10b981',
             accentColorForeground: 'white',
             borderRadius: 'medium',
             fontStack: 'system',

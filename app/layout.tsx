@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Web3Provider from '@/components/providers/Web3Provider';
+import Web3Provider from './components/providers/Web3Provider';
 
 export const metadata: Metadata = {
   title: 'Project Aegis | Provably Fair Casino',
