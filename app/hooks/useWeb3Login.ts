@@ -1,18 +1,19 @@
+import { useState } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '@/app/lib/supabaseClient';
 
 export function useWeb3Login() {
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const login = async () => {
-    if (!address) return;
+    if (!address) return false;
+    setIsLoggingIn(true);
 
     try {
       const message = `Sign in to Project Aegis with wallet: ${address}`;
       const signature = await signMessageAsync({ message });
-
-      console.log("Supabase URL is:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-siwe`, {
         method: 'POST',
@@ -23,19 +24,24 @@ export function useWeb3Login() {
       const result = await response.json();
       
       if (result.success) {
-        console.log("Logged into Aegis Backend!", result.user);
+        // Officially log the user into the Supabase client!
+        const { error } = await supabase.auth.signInWithPassword({
+          email: result.email,
+          password: result.password,
+        });
+
+        if (error) throw error;
         
-        // In the future, we will use the SupabaseClient client here to set the session
-        // e.g., await SupabaseClient.auth.setSession(...)
-        
-        // This line satisfies ESLint by actually utilizing the imported client
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Current SupabaseClient Session:", session);
+        console.log("Successfully authenticated client with Supabase!");
+        return true;
       }
     } catch (error) {
       console.error("SIWE Login Failed:", error);
+      return false;
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  return { login };
+  return { login, isLoggingIn };
 }
