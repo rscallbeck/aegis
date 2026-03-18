@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { initMinesGame } from '@/app/lib/game/minesConfig';
+// Add this line to import your Supabase client!
+import { supabase } from '@/app/lib/supabaseClient'; 
 
 export default function MinesBoard() {
 
@@ -59,16 +61,45 @@ export default function MinesBoard() {
     };
   }, [activeGameId]);
 
-  // Handle Start Game
+// Replace the old simulated startGame function with this:
   const startGame = async () => {
-    setGameState('playing');
-    setCurrentMultiplier(1.00);
-    // Note: You will need a 'start-game' edge function to insert the initial row into supabase!
-    // For now, we simulate starting a game:
-    console.log(`Starting game with ${betAmount} USD and ${mineCount} mines...`);
-    setActiveGameId('simulated-game-id-123'); 
-  };
+    try {
+      
+      // 1. Get the current user session so we can prove who is placing the bet
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No active session found. Please sign in.");
+        return;
+      }
 
+      // 2. Call our new Edge Function
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/start-game`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // Pass the JWT!
+        },
+        body: JSON.stringify({ betAmount, mineCount }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 3. Unlock the board!
+        setGameState('playing');
+        setCurrentMultiplier(1.00);
+        setActiveGameId(result.gameId);
+        console.log(`Real game started! Postgres ID: ${result.gameId}`);
+        console.log(`New Wallet Balance: $${result.newBalance}`);
+      } else {
+        console.error("Backend error:", result.error);
+        // You might want to show a toast/alert here to the user
+      }
+    } catch (error) {
+      console.error("Network error starting game:", error);
+    }
+  };
+  
   // Handle Cash Out
   const cashOut = async () => {
     if (!activeGameId) return;
