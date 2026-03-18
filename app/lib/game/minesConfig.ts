@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
 
-/**
- * Interface for the callback function when a tile is clicked.
- */
-type TileClickHandler = (tileId: number) => Promise<boolean | void>;
+export type TileClickHandler = (tileId: number) => Promise<boolean | void>;
 
 export interface MinesGameConfig {
   containerId: string;
@@ -19,7 +16,7 @@ export class MinesScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Ensure these assets exist in your /public/assets folder
+    // Note: You must place these 3 image files in your /public/assets folder!
     this.load.image('tile', '/assets/tile.png');
     this.load.image('gem', '/assets/gem.png');
     this.load.image('bomb', '/assets/bomb.png');
@@ -30,6 +27,7 @@ export class MinesScene extends Phaser.Scene {
     const TILE_SPACING = 100;
 
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      // Calculate x and y coordinates to center the 5x5 grid in the 500x500 canvas
       const x = (i % GRID_SIZE) * TILE_SPACING + 50;
       const y = Math.floor(i / GRID_SIZE) * TILE_SPACING + 50;
       
@@ -39,6 +37,8 @@ export class MinesScene extends Phaser.Scene {
       tile.on('pointerdown', async () => {
         // Disable interaction immediately to prevent double-clicks
         tile.disableInteractive();
+        
+        // Wait for the Supabase Edge Function to respond
         const isHit = await this.onTileClick(i);
         
         // Handle visual feedback based on the server response
@@ -51,12 +51,11 @@ export class MinesScene extends Phaser.Scene {
     }
   }
 
-  // Inside MinesScene class
   public async playWinSequence(minePositions: number[]): Promise<void> {
-    // 1. Dim the board slightly
-    this.cameras.main.flash(500, 0, 255, 0, false); // Green flash
+    // 1. Flash the board green
+    this.cameras.main.flash(500, 0, 255, 0, false); 
 
-    // 2. Reveal all un-clicked mines as semi-transparent
+    // 2. Reveal all un-clicked mines as semi-transparent to prove fairness
     minePositions.forEach((pos) => {
       const tile = this.children.list.find(child => child.getData('id') === pos) as Phaser.GameObjects.Sprite;
       if (tile && tile.texture.key === 'tile') {
@@ -64,7 +63,7 @@ export class MinesScene extends Phaser.Scene {
       }
     });
 
-    // 3. Add a "Winner" text or particle effect
+    // 3. Add the cash-out text overlay
     const { width, height } = this.scale;
     this.add.text(width / 2, height / 2, 'CASHED OUT!', {
       fontSize: '48px',
@@ -72,7 +71,6 @@ export class MinesScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(10);
   }
-
 }
 
 export const initMinesGame = (config: MinesGameConfig): Phaser.Game => {
@@ -81,7 +79,7 @@ export const initMinesGame = (config: MinesGameConfig): Phaser.Game => {
     parent: config.containerId,
     width: 500,
     height: 500,
-    transparent: true,
+    backgroundColor: '#020617', // Slate-950 to blend perfectly with your Tailwind UI
     scene: new MinesScene(config.onTileClick),
   };
 
