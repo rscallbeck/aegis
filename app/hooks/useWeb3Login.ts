@@ -12,6 +12,8 @@ export function useWeb3Login() {
       const message = `Sign in to Project Aegis with wallet: ${address}`;
       const signature = await signMessageAsync({ message });
 
+      console.log("Supabase URL is:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-siwe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
