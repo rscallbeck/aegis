@@ -66,10 +66,9 @@ export default function Home() {
 
       </main>
 
-      {/* Just a placeholder for where the game will go once authenticated */}
-      {/* <div className="mt-12 z-10">
+      <div className="mt-12 z-10">
         <MinesBoard />
-      </div> */}
+      </div>
       
     </div>
   );

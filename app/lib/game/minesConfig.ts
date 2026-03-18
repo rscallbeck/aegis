@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 
 export type TileClickHandler = (tileId: number) => Promise<boolean | void>;
 
@@ -74,7 +74,7 @@ export class MinesScene extends Phaser.Scene {
 }
 
 export const initMinesGame = (config: MinesGameConfig): Phaser.Game => {
-  const phaserConfig: Phaser.Types.Core.GameConfig = {
+  const PhaserConfig: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: config.containerId,
     width: 500,
@@ -83,5 +83,5 @@ export const initMinesGame = (config: MinesGameConfig): Phaser.Game => {
     scene: new MinesScene(config.onTileClick),
   };
 
-  return new Phaser.Game(phaserConfig);
+  return new Phaser.Game(PhaserConfig);
 };
