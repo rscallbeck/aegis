@@ -23,7 +23,7 @@
     "qr": "^0.5.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "viem": "^2.47.4",
+    "viem": "^2.47.5",
     "wagmi": "^2.19.5"
   },
   "devDependencies": {

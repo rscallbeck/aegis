@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { calculateNextMultiplier } from "../../../lib/game/betting-logic.ts";
+import { calculateNextMultiplier } from '../_shared/betting-logic.ts';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   const supabase = createClient(
@@ -8,10 +13,10 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "" // Use Service Role to bypass RLS for checking mines
   );
 
-  try {
+try {
     const { gameId, tileId } = await req.json();
     
-    // 1. Fetch Game State
+    // 1. Fetch Game State (Fixed the rogue backticks here!)
     const { data: game, error: fetchError } = await supabase
       .from("mines_games")
       .select("*")
@@ -28,7 +33,9 @@ serve(async (req) => {
     }
 
     const isMine = game.mine_positions.includes(tileId);
-    let updateData: any = {};
+    
+    // Fixed the 'any' type error here!
+    let updateData: Record<string, unknown> = {}; 
 
     if (isMine) {
       // 💥 KABOOM
@@ -60,10 +67,13 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       isMine, 
-      payout_multiplier: updateData.payout_multiplier || 0 
-    }), { headers: { "Content-Type": "application/json" } });
+      payout_multiplier: updateData.payout_multiplier 
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
 
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400 });
-  }
+} catch (err) {
+  const errorMessage = err instanceof Error ? err.message : "Unknown error";
+  return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
+}
 });

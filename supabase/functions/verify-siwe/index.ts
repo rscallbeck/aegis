@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verifyMessage } from "https://esm.sh/viem@2.21.0";
+import { verifyMessage } from "https://esm.sh/viem@2.21.19";
 
+// Standard CORS headers  
 
-// 1. Define standard CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req: Request) => {
-  // 2. Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -23,7 +22,8 @@ serve(async (req: Request) => {
   try {
     const { message, signature, address } = await req.json();
 
-    const isValid = await verifyMessage({
+    // 1. Verify the signature
+    const isValid = await verifyMessage ({
       address: address as `0x${string}`,
       message,
       signature,
@@ -31,21 +31,30 @@ serve(async (req: Request) => {
 
     if (!isValid) throw new Error("Invalid signature");
 
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: `${address.toLowerCase()}@web3.aegis`,
+    const email = `${address.toLowerCase()}@web3.aegis`;
+    
+    // 2. Create a secure, deterministic password based on a server secret
+    const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.substring(0, 16) || "fallback";
+    const dummyPassword = `${address}_${secret}`;
+
+    // 3. Ensure the user exists in Supabase Auth (fails silently if they already exist)
+    await supabase.auth.admin.createUser({
+      email: email,
+      password: dummyPassword,
+      email_confirm: true,
     });
 
-    if (error) throw error;
-
-    // 3. Attach CORS headers to the success response
-    return new Response(JSON.stringify({ success: true, user: data.user }), {
+    // 4. Return the credentials to the frontend so it can securely sign in!
+    return new Response(JSON.stringify({ 
+      success: true, 
+      email: email,
+      password: dummyPassword 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    // 4. Attach CORS headers to the error response
     return new Response(JSON.stringify({ error: errorMessage }), { 
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

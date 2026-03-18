@@ -4,5 +4,6 @@
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"
-  }
+  },
+  "allowScripts": ["npm:@reown/appkit@1.8.17-wc-circular-dependencies-fix.0", "npm:bufferutil@4.1.0", "npm:deno@2.7.6", "npm:keccak@3.0.4", "npm:sharp@0.34.5", "npm:unrs-resolver@1.11.1", "npm:utf-8-validate@5.0.10", "npm:utf-8-validate@6.0.6"]
 }
