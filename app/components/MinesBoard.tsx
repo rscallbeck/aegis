@@ -22,31 +22,42 @@ export default function MinesBoard() {
   useEffect(() => {
     if (typeof window !== 'undefined' && gameContainerRef.current && !phaserInstanceRef.current) {
       
-      const handleTileClick = async (tileId: number): Promise<boolean> => {
-        if (!activeGameId) return false;
+  const handleTileClick = async (tileId: number): Promise<boolean> => {
+    if (!activeGameIdRef.current) {
+      console.warn("Click ignored: No active game ID.");
+      return false; 
+    }
 
-        try {
-          // Call the Reveal Edge Function
-          const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reveal-tile`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId: activeGameId, tileId }),
-          });
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reveal-tile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: activeGameIdRef.current, tileId }),
+      });
 
-          const result = await response.json();
+      const result = await response.json();
 
-          if (result.isMine) {
-            setGameState('busted');
-            return true; // Tells Phaser to show a Bomb
-          } else {
-            setCurrentMultiplier(result.payout_multiplier);
-            return false; // Tells Phaser to show a Gem
-          }
-        } catch (error) {
-          console.error("Error revealing tile:", error);
-          return false;
-        }
-      };
+      // ADD THIS: Catch backend errors so we don't accidentally draw a gem!
+      if (!response.ok || result.error) {
+        console.error("Server refused to reveal tile:", result.error);
+        alert(`Server Error: ${result.error}`); // Show it to the user
+        throw new Error(result.error);
+      }
+
+      if (result.isMine) {
+        setGameState('busted');
+        activeGameIdRef.current = null;
+        return true;
+      } else {
+        setCurrentMultiplier(result.payout_multiplier);
+        return false;
+      }
+    } catch (error) {
+      console.error("Tile reveal failed:", error);
+      // Don't pretend it's safe if the network fails!
+      throw error; 
+    }
+  };
 
       phaserInstanceRef.current = initMinesGame({
         containerId: 'mines-canvas-container',
@@ -62,6 +73,43 @@ export default function MinesBoard() {
     };
   }, [activeGameId]);
 
+  const handleCashOut = async () => {
+    if (!activeGameIdRef.current) return;
+
+    try {
+      // Get the user's secure session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/cash-out`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ gameId: activeGameIdRef.current }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error);
+      }
+
+      // Success! Update the UI
+      setGameState('idle'); 
+      activeGameIdRef.current = null;
+      
+      // Optional: You can replace this alert with a nice UI toast/modal later!
+      alert(`🎉 CASHED OUT!\nYou won $${result.finalPayout.toFixed(2)}\nNew Balance: $${result.newBalance.toFixed(2)}`);
+      
+    } catch (error) {
+      console.error("Cash out failed:", error);
+      alert(`Error cashing out: ${error}`);
+    }
+  };
+  
+  
   // Replace the old simulated startGame function with this:
   const startGame = async () => {
     try {
@@ -161,23 +209,24 @@ export default function MinesBoard() {
           </select>
         </div>
 
-        {/* Action Button */}
-        {gameState === 'playing' ? (
-          <button 
-            onClick={cashOut}
-            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black text-xl rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
-          >
-            CASH OUT <br/>
-            <span className="text-sm font-bold">(${(betAmount * currentMultiplier).toFixed(2)})</span>
-          </button>
-        ) : (
-          <button 
-            onClick={startGame}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl rounded-xl transition-all active:scale-95"
-          >
-            BET
-          </button>
-        )}
+        {/* Controls */}
+        <div className="mt-6 flex justify-center w-full">
+          {gameState === 'playing' ? (
+            <button 
+              onClick={handleCashOut}
+              className="w-full max-w-[500px] py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-xl tracking-widest rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all active:scale-95"
+            >
+              CASH OUT ({currentMultiplier.toFixed(2)}x)
+            </button>
+          ) : (
+            <button 
+              onClick={startGame}
+              className="w-full max-w-[500px] py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-xl tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+            >
+              {gameState === 'busted' ? 'PLAY AGAIN' : 'BET $10.00'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* RIGHT PANEL: Phaser Game Canvas */}
@@ -198,7 +247,7 @@ export default function MinesBoard() {
           )}
         </div>
 
-{/* Wrapper to safely isolate React and Phaser DOMs */}
+        {/* Wrapper to safely isolate React and Phaser DOMs */}
         <div className="relative w-[500px] h-[500px] rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden">
           
           {/* 1. The Phaser Container - React should NOT put children inside this! */}

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Ensure you actually created this file and folder!
 import { calculateNextMultiplier } from '../_shared/betting-logic.ts';
 
 const corsHeaders = {
@@ -7,16 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "" // Use Service Role to bypass RLS for checking mines
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
-try {
+  try {
     const { gameId, tileId } = await req.json();
     
-    // 1. Fetch Game State (Fixed the rogue backticks here!)
+    // 1. Fetch Game State
     const { data: game, error: fetchError } = await supabase
       .from("mines_games")
       .select("*")
@@ -27,29 +32,25 @@ try {
       throw new Error("Game not found or already finished.");
     }
 
-    // 2. Prevent Double-Clicking the same tile
+    // 2. Prevent Double-Clicking
     if (game.revealed_tiles.includes(tileId)) {
       throw new Error("Tile already revealed.");
     }
 
     const isMine = game.mine_positions.includes(tileId);
-    
-    // Fixed the 'any' type error here!
     let updateData: Record<string, unknown> = {}; 
 
     if (isMine) {
-      // 💥 KABOOM
       updateData = {
         status: 'busted',
         revealed_tiles: [...game.revealed_tiles, tileId],
         final_payout: 0,
       };
     } else {
-      // 💎 GEM FOUND
       const nextMultiplier = calculateNextMultiplier(game.revealed_tiles.length, {
         totalTiles: 25,
         mineCount: game.mine_count,
-        houseEdge: 0.03, // 3% House Edge
+        houseEdge: 0.03, 
       });
 
       updateData = {
@@ -58,6 +59,7 @@ try {
       };
     }
 
+    // 3. Update Database
     const { error: updateError } = await supabase
       .from("mines_games")
       .update(updateData)
@@ -72,8 +74,15 @@ try {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-} catch (err) {
-  const errorMessage = err instanceof Error ? err.message : "Unknown error";
-  return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
-}
+  } catch (err: unknown) {
+    let errorMessage = "Unknown error";
+    if (err instanceof Error) errorMessage = err.message;
+    else if (typeof err === 'object' && err !== null && 'message' in err) {
+      errorMessage = String((err as Record<string, unknown>).message);
+    }
+    return new Response(JSON.stringify({ error: errorMessage }), { 
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
 });
