@@ -9,6 +9,7 @@ export default function MinesBoard() {
 
   const gameContainerRef = useRef<HTMLDivElement | null>(null);
   const phaserInstanceRef = useRef<Phaser.Game | null>(null);
+  const activeGameIdRef = useRef<string | null>(null);
 
   // Game State
   const [betAmount, setBetAmount] = useState<number>(10);
@@ -61,7 +62,7 @@ export default function MinesBoard() {
     };
   }, [activeGameId]);
 
-// Replace the old simulated startGame function with this:
+  // Replace the old simulated startGame function with this:
   const startGame = async () => {
     try {
       
@@ -89,6 +90,8 @@ export default function MinesBoard() {
         setGameState('playing');
         setCurrentMultiplier(1.00);
         setActiveGameId(result.gameId);
+        // ADD THIS: Save the ID to the ref immediately!
+        activeGameIdRef.current = result.gameId;  
         console.log(`Real game started! Postgres ID: ${result.gameId}`);
         console.log(`New Wallet Balance: $${result.newBalance}`);
       } else {
@@ -195,16 +198,16 @@ export default function MinesBoard() {
           )}
         </div>
 
-        {/* The Phaser Container */}
-        <div 
-          id="mines-canvas-container" 
-          ref={gameContainerRef} 
-          className="w-[500px] h-[500px] rounded-xl bg-slate-950 border-2 border-slate-800 overflow-hidden shadow-2xl relative"
-        >
-          {/* Cover the board if not playing */}
+{/* Wrapper to safely isolate React and Phaser DOMs */}
+        <div className="relative w-[500px] h-[500px] rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden">
+          
+          {/* 1. The Phaser Container - React should NOT put children inside this! */}
+          <div id="mines-canvas-container" ref={gameContainerRef} className="w-full h-full bg-slate-950" />
+
+          {/* 2. The React Overlay - Now safely floating above the canvas as a sibling */}
           {gameState === 'idle' && (
-            <div className="absolute inset-0 z-10 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center">
-              <p className="text-slate-400 font-bold text-xl">Place a bet to start</p>
+            <div className="absolute inset-0 z-10 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+              <span className="text-xl font-bold text-slate-400 tracking-widest">PLACE BET TO START</span>
             </div>
           )}
         </div>
