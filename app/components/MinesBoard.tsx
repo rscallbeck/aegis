@@ -17,6 +17,13 @@ export default function MinesBoard() {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [currentMultiplier, setCurrentMultiplier] = useState<number>(1.00);
 
+  // ADD THIS: State for the custom Provably Fair Modal
+  const [rotatedSeeds, setRotatedSeeds] = useState<{
+    oldServerSeedRaw: string;
+    newServerSeedHash: string;
+    newClientSeed: string;
+  } | null>(null);
+
   // Initialize the Phaser Canvas
   useEffect(() => {
     if (typeof window !== 'undefined' && gameContainerRef.current && !phaserInstanceRef.current) {
@@ -128,13 +135,12 @@ export default function MinesBoard() {
 
       if (!response.ok || result.error) throw new Error(result.error);
 
-      alert(
-        `✅ Seed Rotated Successfully!\n\n` +
-        `YOUR PAST SERVER SEED (RAW):\n${result.oldServerSeedRaw || "None (First time playing)"}\n\n` +
-        `NEW SERVER HASH:\n${result.newServerSeedHash}\n\n` +
-        `NEW CLIENT SEED:\n${result.newClientSeed}\n\n` +
-        `Save your past raw seed to verify your previous games were fair!`
-      );
+      // Replace the old alert() block with this:
+      setRotatedSeeds({
+        oldServerSeedRaw: result.oldServerSeedRaw || "None (First time playing)",
+        newServerSeedHash: result.newServerSeedHash,
+        newClientSeed: result.newClientSeed
+      });
       
     } catch (error) {
       console.error("Seed rotation failed:", error);
@@ -275,6 +281,52 @@ export default function MinesBoard() {
         </div>
 
       </div>
+
+      {/* ADD THIS: The Custom Seed Modal Overlay */}
+      {rotatedSeeds && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <h3 className="text-2xl font-black text-emerald-400 tracking-wider">✅ SEED ROTATED</h3>
+            <p className="text-sm text-slate-400">Copy your previous server seed below to verify your past games.</p>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">Past Server Seed (Raw)</label>
+              <textarea 
+                readOnly 
+                value={rotatedSeeds.oldServerSeedRaw} 
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white font-mono text-sm h-20 outline-none focus:border-emerald-500 transition-colors selection:bg-emerald-500/30" 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">New Server Hash</label>
+              <input 
+                readOnly 
+                value={rotatedSeeds.newServerSeedHash} 
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white font-mono text-sm outline-none focus:border-emerald-500 transition-colors selection:bg-emerald-500/30" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">New Client Seed</label>
+              <input 
+                readOnly 
+                value={rotatedSeeds.newClientSeed} 
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white font-mono text-sm outline-none focus:border-emerald-500 transition-colors selection:bg-emerald-500/30" 
+              />
+            </div>
+
+            <button 
+              onClick={() => setRotatedSeeds(null)}
+              className="w-full mt-6 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold tracking-widest uppercase rounded-xl transition-all active:scale-95"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
