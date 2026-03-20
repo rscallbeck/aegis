@@ -28,7 +28,7 @@ export default function Home() {
           <div className="w-full max-w-md mx-auto p-8 bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl shadow-2xl flex flex-col items-center space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
             {!isConnected ? (
               <div className="flex flex-col items-center space-y-4">
-                <p className="text-slate-300 font-medium">Connect your Web3 wallet to enter the lobby.</p>
+                <p className="text-slate-300 font-medium">Connect wallet</p>
                 <ConnectButton />
               </div>
             ) : (
@@ -50,6 +50,7 @@ export default function Home() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
               {/* Mines Game Card */}
               <Link href="/mines" className="group block text-left bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 rounded-2xl overflow-hidden shadow-xl transition-all hover:-translate-y-2">
                 <div className="h-48 bg-slate-800 flex items-center justify-center relative overflow-hidden">
@@ -62,17 +63,20 @@ export default function Home() {
                 </div>
               </Link>
 
-{/* Coming Soon Card */}
-              <div className="text-left bg-slate-900/30 border border-slate-800/50 rounded-2xl overflow-hidden shadow-xl opacity-50 cursor-not-allowed">
-                <div className="h-48 bg-slate-800/50 flex items-center justify-center">
-                  <span className="text-4xl text-slate-600 font-black">COMING SOON</span>
+              {/* Crash Game Card */}
+              <Link href="/crash" className="group block text-left bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 rounded-2xl overflow-hidden shadow-xl transition-all hover:-translate-y-2">
+                <div className="h-48 bg-slate-800 flex items-center justify-center relative overflow-hidden">
+                  <span className="text-6xl group-hover:scale-110 transition-transform duration-500">🚀</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
                 </div>
                 <div className="p-6">
-                  <h3 className="text-2xl font-black text-slate-500 mb-2">CRASH</h3>
-                  <p className="text-sm text-slate-600">Cash out before the graph crashes.</p>
+                  <h3 className="text-2xl font-black text-emerald-400 mb-2">CRASH</h3>
+                  <p className="text-sm text-slate-400">Cash out before the multiplier crashes to secure your winnings.</p>
                 </div>
-              </div>
+              </Link>
+
             </div>
+
           </div>
         )}
       </main>

@@ -16,6 +16,11 @@ export class MinesScene extends Phaser.Scene {
   }
 
   preload(): void {
+
+    this.load.audio('reveal', 'https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3');
+    this.load.audio('explosion', 'https://assets.mixkit.co/active_storage/sfx/1696/1696-preview.mp3');
+    this.load.audio('cashout', 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+    
     this.load.image('tile', '/assets/tile.png');
     this.load.image('gem', '/assets/gem.png');
     this.load.image('bomb', '/assets/bomb.png');

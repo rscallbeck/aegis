@@ -52,7 +52,7 @@ serve(async (req: Request) => {
       newMultiplier = calculateTotalPayout(1, game.revealed_tiles.length + 1, {
         totalTiles: 25,
         mineCount: game.mine_count,
-        houseEdge: 0.03, 
+        houseEdge: 0.02, // 🚨 UPDATED: 2% House Edge (98% RTP)
       });
 
       updateData = {

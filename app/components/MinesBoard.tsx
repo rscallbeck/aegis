@@ -52,10 +52,12 @@ export default function MinesBoard() {
           if (result.isMine) {
             setGameState('busted');
             activeGameIdRef.current = null;
+            phaserInstanceRef.current?.sound.play('explosion', { volume: 0.6 });
             phaserInstanceRef.current?.events.emit('reveal-board', result.minePositions);
             return true;
           } else {
             setCurrentMultiplier(result.payout_multiplier);
+            phaserInstanceRef.current?.sound.play('reveal', { volume: 0.4 });
             return false;
           }
         } catch (error) {
@@ -79,6 +81,9 @@ export default function MinesBoard() {
   }, [activeGameId]);
 
   const handleCashOut = async () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+    audio.volume = 0.5;
+    audio.play();  
     if (!activeGameIdRef.current) return;
 
     try {
@@ -254,7 +259,7 @@ export default function MinesBoard() {
         </div>
       </div>
 
-{/* RIGHT PANEL: Phaser Game Canvas */}
+      {/* RIGHT PANEL: Phaser Game Canvas */}
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-[500px]">
         
         {/* Multiplier Display - Moved safely OUTSIDE the canvas wrapper! */}

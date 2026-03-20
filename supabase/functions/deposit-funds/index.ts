@@ -7,9 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const supabase = createClient(
@@ -17,33 +15,32 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Verify User Session
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     if (authError || !user) throw new Error('Unauthorized');
 
-    // 2. Get the deposit amount
     const { amount } = await req.json();
     if (!amount || amount <= 0) throw new Error('Invalid deposit amount');
 
-    // 3. Fetch current balance
+    // 🚨 FIX 1: Use maybeSingle() so it doesn't crash if you don't have a profile yet!
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('balance_usd')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) throw profileError;
 
-    // 4. Calculate and Update
-    const newBalance = Number(profile.balance_usd) + Number(amount);
+    // Calculate current balance (defaulting to 0 if the profile is missing)
+    const currentBalance = profile ? Number(profile.balance_usd) : 0;
+    const newBalance = currentBalance + Number(amount);
 
+    // 🚨 FIX 2: Use upsert() to automatically create the row if it's missing!
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ balance_usd: newBalance })
-      .eq('id', user.id);
+      .upsert({ id: user.id, balance_usd: newBalance });
 
     if (updateError) throw updateError;
 
