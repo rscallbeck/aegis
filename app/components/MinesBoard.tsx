@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { initMinesGame } from '@/app/lib/game/minesConfig';
-// Add this line to import your Supabase client!
 import { supabase } from '@/app/lib/supabaseClient'; 
 
 export default function MinesBoard() {
@@ -22,42 +21,40 @@ export default function MinesBoard() {
   useEffect(() => {
     if (typeof window !== 'undefined' && gameContainerRef.current && !phaserInstanceRef.current) {
       
-  const handleTileClick = async (tileId: number): Promise<boolean> => {
-    if (!activeGameIdRef.current) {
-      console.warn("Click ignored: No active game ID.");
-      return false; 
-    }
+      const handleTileClick = async (tileId: number): Promise<boolean> => {
+        if (!activeGameIdRef.current) {
+          console.warn("Click ignored: No active game ID.");
+          return false; 
+        }
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reveal-tile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId: activeGameIdRef.current, tileId }),
-      });
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reveal-tile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId: activeGameIdRef.current, tileId }),
+          });
 
-      const result = await response.json();
+          const result = await response.json();
 
-      // ADD THIS: Catch backend errors so we don't accidentally draw a gem!
-      if (!response.ok || result.error) {
-        console.error("Server refused to reveal tile:", result.error);
-        alert(`Server Error: ${result.error}`); // Show it to the user
-        throw new Error(result.error);
-      }
+          if (!response.ok || result.error) {
+            console.error("Server refused to reveal tile:", result.error);
+            alert(`Server Error: ${result.error}`); 
+            throw new Error(result.error);
+          }
 
-      if (result.isMine) {
-        setGameState('busted');
-        activeGameIdRef.current = null;
-        return true;
-      } else {
-        setCurrentMultiplier(result.payout_multiplier);
-        return false;
-      }
-    } catch (error) {
-      console.error("Tile reveal failed:", error);
-      // Don't pretend it's safe if the network fails!
-      throw error; 
-    }
-  };
+          if (result.isMine) {
+            setGameState('busted');
+            activeGameIdRef.current = null;
+            return true;
+          } else {
+            setCurrentMultiplier(result.payout_multiplier);
+            return false;
+          }
+        } catch (error) {
+          console.error("Tile reveal failed:", error);
+          throw error; 
+        }
+      };
 
       phaserInstanceRef.current = initMinesGame({
         containerId: 'mines-canvas-container',
@@ -77,7 +74,6 @@ export default function MinesBoard() {
     if (!activeGameIdRef.current) return;
 
     try {
-      // Get the user's secure session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No active session");
 
@@ -96,11 +92,9 @@ export default function MinesBoard() {
         throw new Error(result.error);
       }
 
-      // Success! Update the UI
       setGameState('idle'); 
       activeGameIdRef.current = null;
       
-      // Optional: You can replace this alert with a nice UI toast/modal later!
       alert(`🎉 CASHED OUT!\nYou won $${result.finalPayout.toFixed(2)}\nNew Balance: $${result.newBalance.toFixed(2)}`);
       
     } catch (error) {
@@ -108,25 +102,59 @@ export default function MinesBoard() {
       alert(`Error cashing out: ${error}`);
     }
   };
+
+  const handleRotateSeed = async () => {
+    if (gameState === 'playing') {
+      alert("You can only rotate your seed when not in an active game!");
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
+
+      const customClientSeed = window.prompt("Enter a custom Client Seed (or leave blank to auto-generate):");
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/rotate-seed`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ customClientSeed: customClientSeed || undefined }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) throw new Error(result.error);
+
+      alert(
+        `✅ Seed Rotated Successfully!\n\n` +
+        `YOUR PAST SERVER SEED (RAW):\n${result.oldServerSeedRaw || "None (First time playing)"}\n\n` +
+        `NEW SERVER HASH:\n${result.newServerSeedHash}\n\n` +
+        `NEW CLIENT SEED:\n${result.newClientSeed}\n\n` +
+        `Save your past raw seed to verify your previous games were fair!`
+      );
+      
+    } catch (error) {
+      console.error("Seed rotation failed:", error);
+      alert(`Error rotating seed: ${error}`);
+    }
+  };
   
-  
-  // Replace the old simulated startGame function with this:
   const startGame = async () => {
     try {
-      
-      // 1. Get the current user session so we can prove who is placing the bet
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.error("No active session found. Please sign in.");
         return;
       }
 
-      // 2. Call our new Edge Function
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/start-game`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // Pass the JWT!
+          'Authorization': `Bearer ${session.access_token}` 
         },
         body: JSON.stringify({ betAmount, mineCount }),
       });
@@ -134,42 +162,17 @@ export default function MinesBoard() {
       const result = await response.json();
 
       if (result.success) {
-        // 3. Unlock the board!
         setGameState('playing');
         setCurrentMultiplier(1.00);
         setActiveGameId(result.gameId);
-        // ADD THIS: Save the ID to the ref immediately!
         activeGameIdRef.current = result.gameId;  
         console.log(`Real game started! Postgres ID: ${result.gameId}`);
         console.log(`New Wallet Balance: $${result.newBalance}`);
       } else {
         console.error("Backend error:", result.error);
-        // You might want to show a toast/alert here to the user
       }
     } catch (error) {
       console.error("Network error starting game:", error);
-    }
-  };
-  
-  // Handle Cash Out
-  const cashOut = async () => {
-    if (!activeGameId) return;
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/cash-out`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId: activeGameId }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setGameState('cashed_out');
-        console.log(`Cashed out for ${result.finalPayout}!`);
-        // Note: You can call a method on your Phaser scene here to trigger the win animation
-      }
-    } catch (error) {
-      console.error("Error cashing out:", error);
     }
   };
 
@@ -210,7 +213,7 @@ export default function MinesBoard() {
         </div>
 
         {/* Controls */}
-        <div className="mt-6 flex justify-center w-full">
+        <div className="mt-6 flex flex-col items-center w-full">
           {gameState === 'playing' ? (
             <button 
               onClick={handleCashOut}
@@ -224,6 +227,16 @@ export default function MinesBoard() {
               className="w-full max-w-[500px] py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-xl tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {gameState === 'busted' ? 'PLAY AGAIN' : 'BET $10.00'}
+            </button>
+          )}
+
+          {/* Provably Fair Button */}
+          {gameState !== 'playing' && (
+            <button 
+              onClick={handleRotateSeed}
+              className="mt-4 text-xs font-bold text-slate-500 hover:text-emerald-400 tracking-wider uppercase transition-colors"
+            >
+              Provably Fair Settings
             </button>
           )}
         </div>
