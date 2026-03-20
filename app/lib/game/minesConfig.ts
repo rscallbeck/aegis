@@ -16,7 +16,6 @@ export class MinesScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Note: You must place these 3 image files in your /public/assets folder!
     this.load.image('tile', '/assets/tile.png');
     this.load.image('gem', '/assets/gem.png');
     this.load.image('bomb', '/assets/bomb.png');
@@ -27,7 +26,6 @@ export class MinesScene extends Phaser.Scene {
     const TILE_SPACING = 100;
 
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-      // Calculate x and y coordinates to center the 5x5 grid in the 500x500 canvas
       const x = (i % GRID_SIZE) * TILE_SPACING + 50;
       const y = Math.floor(i / GRID_SIZE) * TILE_SPACING + 50;
       
@@ -35,41 +33,37 @@ export class MinesScene extends Phaser.Scene {
       tile.setData('id', i);
 
       tile.on('pointerdown', async () => {
-        // Disable interaction immediately to prevent double-clicks
         tile.disableInteractive();
-        
-        // Wait for the Supabase Edge Function to respond
         const isHit = await this.onTileClick(i);
-        
-        // Handle visual feedback based on the server response
         if (isHit) {
           tile.setTexture('bomb');
+          // Add a little shake effect when hitting a bomb!
+          this.cameras.main.shake(200, 0.02);
         } else {
           tile.setTexture('gem');
         }
       });
     }
-  }
 
-  public async playWinSequence(minePositions: number[]): Promise<void> {
-    // 1. Flash the board green
-    this.cameras.main.flash(500, 0, 255, 0, false); 
-
-    // 2. Reveal all un-clicked mines as semi-transparent to prove fairness
-    minePositions.forEach((pos) => {
-      const tile = this.children.list.find(child => child.getData('id') === pos) as Phaser.GameObjects.Sprite;
-      if (tile && tile.texture.key === 'tile') {
-        tile.setTexture('bomb').setAlpha(0.5);
-      }
+    // Listen for the custom "reveal-board" event from React
+    this.game.events.on('reveal-board', (minePositions: number[]) => {
+      this.children.list.forEach((child) => {
+        const sprite = child as Phaser.GameObjects.Sprite;
+        // Only flip tiles that haven't been clicked yet
+        if (sprite.texture.key === 'tile') {
+          const id = sprite.getData('id');
+          if (minePositions.includes(id)) {
+            // Unclicked mines appear slightly dimmed
+            sprite.setTexture('bomb').setAlpha(0.6).setTint(0xffaaaa);
+          } else {
+            // Unclicked gems appear slightly dimmed
+            sprite.setTexture('gem').setAlpha(0.6).setTint(0xaaffaa);
+          }
+        }
+        // Disable all clicks once the board is revealed
+        sprite.disableInteractive();
+      });
     });
-
-    // 3. Add the cash-out text overlay
-    const { width, height } = this.scale;
-    this.add.text(width / 2, height / 2, 'CASHED OUT!', {
-      fontSize: '48px',
-      color: '#00ff00',
-      fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(10);
   }
 }
 
@@ -77,9 +71,14 @@ export const initMinesGame = (config: MinesGameConfig): Phaser.Game => {
   const PhaserConfig: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: config.containerId,
-    width: 500,
-    height: 500,
-    backgroundColor: '#020617', // Slate-950 to blend perfectly with your Tailwind UI
+    // Add mobile responsiveness scaling!
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: 500,
+      height: 500,
+    },
+    backgroundColor: '#020617',
     scene: new MinesScene(config.onTileClick),
   };
 

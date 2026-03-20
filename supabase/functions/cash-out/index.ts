@@ -66,10 +66,12 @@ serve(async (req: Request) => {
 
     await supabase.from('profiles').update({ balance_usd: newBalance }).eq('id', user.id);
 
+    // ✅ CORRECT SUCCESS RETURN: Includes the new minePositions data
     return new Response(JSON.stringify({ 
       success: true, 
       finalPayout, 
-      newBalance 
+      newBalance,
+      minePositions: game.mine_positions 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
@@ -80,6 +82,8 @@ serve(async (req: Request) => {
     else if (typeof err === 'object' && err !== null && 'message' in err) {
       errorMessage = String((err as Record<string, unknown>).message);
     }
+    
+    // ✅ CORRECT ERROR RETURN: Uses the errorMessage variable properly
     return new Response(JSON.stringify({ error: errorMessage }), { 
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

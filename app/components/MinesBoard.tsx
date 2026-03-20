@@ -52,6 +52,7 @@ export default function MinesBoard() {
           if (result.isMine) {
             setGameState('busted');
             activeGameIdRef.current = null;
+            phaserInstanceRef.current?.events.emit('reveal-board', result.minePositions);
             return true;
           } else {
             setCurrentMultiplier(result.payout_multiplier);
@@ -99,9 +100,10 @@ export default function MinesBoard() {
         throw new Error(result.error);
       }
 
-      setGameState('idle'); 
+    setGameState('cashed_out'); 
       activeGameIdRef.current = null;
-      
+      // ADD THIS: Trigger Phaser to reveal the rest of the board!
+      phaserInstanceRef.current?.events.emit('reveal-board', result.minePositions);      
       alert(`🎉 CASHED OUT!\nYou won $${result.finalPayout.toFixed(2)}\nNew Balance: $${result.newBalance.toFixed(2)}`);
       
     } catch (error) {
@@ -249,7 +251,8 @@ export default function MinesBoard() {
       </div>
 
       {/* RIGHT PANEL: Phaser Game Canvas */}
-      <div className="flex-1 flex flex-col items-center justify-center">
+      {/* Wrapper to safely isolate React and Phaser DOMs */}
+      <div className="relative w-full max-w-[500px] aspect-square rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden">
         
         {/* Multiplier Display */}
         <div className="h-16 flex items-center justify-center mb-4">

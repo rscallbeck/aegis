@@ -40,14 +40,25 @@ serve(async (req: Request) => {
     const isMine = game.mine_positions.includes(tileId);
     let updateData: Record<string, unknown> = {}; 
 
-    if (isMine) {
+if (isMine) {
       updateData = {
         status: 'busted',
         revealed_tiles: [...game.revealed_tiles, tileId],
         final_payout: 0,
       };
+      
+      // Update Database early so we can return the response
+      const { error: updateError } = await supabase.from("mines_games").update(updateData).eq("id", gameId);
+      if (updateError) throw updateError;
+
+      // ADDED: Return minePositions on Bust
+      return new Response(JSON.stringify({ 
+        isMine: true, 
+        payout_multiplier: 0,
+        minePositions: game.mine_positions 
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
-      const nextMultiplier = calculateNextMultiplier(game.revealed_tiles.length, {
+        const nextMultiplier = calculateNextMultiplier(game.revealed_tiles.length, {
         totalTiles: 25,
         mineCount: game.mine_count,
         houseEdge: 0.03, 
