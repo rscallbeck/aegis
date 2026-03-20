@@ -103,8 +103,10 @@ export default function MinesBoard() {
     setGameState('cashed_out'); 
       activeGameIdRef.current = null;
       // ADD THIS: Trigger Phaser to reveal the rest of the board!
-      phaserInstanceRef.current?.events.emit('reveal-board', result.minePositions);      
-      alert(`🎉 CASHED OUT!\nYou won $${result.finalPayout.toFixed(2)}\nNew Balance: $${result.newBalance.toFixed(2)}`);
+      phaserInstanceRef.current?.events.emit('reveal-board', result.minePositions);
+      // ADD THIS: Ping the Header to add the winnings!
+      window.dispatchEvent(new Event('balance-updated'));      
+      //alert(`🎉 CASHED OUT!\nYou won $${result.finalPayout.toFixed(2)}\nNew Balance: $${result.newBalance.toFixed(2)}`);
       
     } catch (error) {
       console.error("Cash out failed:", error);
@@ -173,7 +175,9 @@ export default function MinesBoard() {
         setGameState('playing');
         setCurrentMultiplier(1.00);
         setActiveGameId(result.gameId);
-        activeGameIdRef.current = result.gameId;  
+        activeGameIdRef.current = result.gameId; 
+        // ADD THIS: Ping the Header to subtract the bet amount!
+        window.dispatchEvent(new Event('balance-updated')); 
         console.log(`Real game started! Postgres ID: ${result.gameId}`);
         console.log(`New Wallet Balance: $${result.newBalance}`);
       } else {
