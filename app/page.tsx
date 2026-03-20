@@ -62,7 +62,7 @@ export default function Home() {
                 </div>
               </Link>
 
-              {/* Coming Soon Card */}
+{/* Coming Soon Card */}
               <div className="text-left bg-slate-900/30 border border-slate-800/50 rounded-2xl overflow-hidden shadow-xl opacity-50 cursor-not-allowed">
                 <div className="h-48 bg-slate-800/50 flex items-center justify-center">
                   <span className="text-4xl text-slate-600 font-black">COMING SOON</span>
