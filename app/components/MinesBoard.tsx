@@ -254,12 +254,11 @@ export default function MinesBoard() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Phaser Game Canvas */}
-      {/* Wrapper to safely isolate React and Phaser DOMs */}
-      <div className="relative w-full max-w-[500px] aspect-square rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden">
+{/* RIGHT PANEL: Phaser Game Canvas */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-[500px]">
         
-        {/* Multiplier Display */}
-        <div className="h-16 flex items-center justify-center mb-4">
+        {/* Multiplier Display - Moved safely OUTSIDE the canvas wrapper! */}
+        <div className="h-16 flex items-center justify-center mb-4 w-full">
           {gameState === 'playing' && (
             <h3 className="text-5xl font-black text-emerald-400 tracking-tighter drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
               {currentMultiplier.toFixed(2)}x
@@ -274,17 +273,22 @@ export default function MinesBoard() {
         </div>
 
         {/* Wrapper to safely isolate React and Phaser DOMs */}
-        <div className="relative w-[500px] h-[500px] rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden">
+        <div className="relative w-full aspect-square rounded-xl border-2 border-slate-800 shadow-2xl overflow-hidden bg-slate-950">
           
-          {/* 1. The Phaser Container - React should NOT put children inside this! */}
-          <div id="mines-canvas-container" ref={gameContainerRef} className="w-full h-full bg-slate-950" />
+          {/* 1. The Phaser Container */}
+          <div id="mines-canvas-container" ref={gameContainerRef} className="w-full h-full" />
 
-          {/* 2. The React Overlay - Now safely floating above the canvas as a sibling */}
+          {/* 2. The React Overlay - Now a bulletproof click shield! */}
           {gameState === 'idle' && (
-            <div className="absolute inset-0 z-10 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+            <div 
+              className="absolute inset-0 z-10 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center cursor-not-allowed"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <span className="text-xl font-bold text-slate-400 tracking-widest">PLACE BET TO START</span>
             </div>
           )}
+
         </div>
 
       </div>

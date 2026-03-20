@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// Ensure you actually created this file and folder!
-import { calculateNextMultiplier } from '../_shared/betting-logic.ts';
+// UPDATED: Import the Total Payout function instead!
+import { calculateTotalPayout } from '../_shared/betting-logic.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,26 +39,17 @@ serve(async (req: Request) => {
 
     const isMine = game.mine_positions.includes(tileId);
     let updateData: Record<string, unknown> = {}; 
+    let newMultiplier = game.payout_multiplier;
 
-if (isMine) {
+    if (isMine) {
       updateData = {
         status: 'busted',
         revealed_tiles: [...game.revealed_tiles, tileId],
         final_payout: 0,
       };
-      
-      // Update Database early so we can return the response
-      const { error: updateError } = await supabase.from("mines_games").update(updateData).eq("id", gameId);
-      if (updateError) throw updateError;
-
-      // ADDED: Return minePositions on Bust
-      return new Response(JSON.stringify({ 
-        isMine: true, 
-        payout_multiplier: 0,
-        minePositions: game.mine_positions 
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
-        const nextMultiplier = calculateNextMultiplier(game.revealed_tiles.length, {
+      // FIX: Calculate the true accumulated multiplier using $1 as a base
+      newMultiplier = calculateTotalPayout(1, game.revealed_tiles.length + 1, {
         totalTiles: 25,
         mineCount: game.mine_count,
         houseEdge: 0.03, 
@@ -66,7 +57,7 @@ if (isMine) {
 
       updateData = {
         revealed_tiles: [...game.revealed_tiles, tileId],
-        payout_multiplier: nextMultiplier,
+        payout_multiplier: newMultiplier,
       };
     }
 
@@ -78,9 +69,11 @@ if (isMine) {
 
     if (updateError) throw updateError;
 
+    // FIX: Restored minePositions to the return statement so the board reveals!
     return new Response(JSON.stringify({ 
       isMine, 
-      payout_multiplier: updateData.payout_multiplier 
+      payout_multiplier: newMultiplier,
+      minePositions: game.mine_positions 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

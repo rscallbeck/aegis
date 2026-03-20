@@ -88,8 +88,8 @@ export default function Header() {
         {/* Controls */}
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm flex items-center justify-center gap-3 z-50 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-3 rounded-2xl shadow-2xl md:bg-transparent md:border-none md:p-0 md:shadow-none md:absolute md:bottom-auto md:left-auto md:right-8 md:top-6 md:translate-x-0 md:w-auto">
           
-          {/* UPDATED: Clickable Balance Badge */}
-          {balance !== null && (
+{/* UPDATED: Clickable Balance Badge */}
+          {balance !== null ? (
             <button 
               onClick={() => setIsCashierOpen(true)}
               className="flex items-center justify-center bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 transition-colors rounded-xl px-4 h-10 shadow-inner group"
@@ -98,10 +98,21 @@ export default function Header() {
               <span className="text-emerald-400 font-bold tracking-wider text-sm group-hover:text-emerald-300 transition-colors">
                 ${balance.toFixed(2)}
               </span>
-              <span className="ml-2 text-slate-600 group-hover:text-emerald-400 font-black transition-colors">+</span>
+              {/* Made the plus sign bright green so it's impossible to miss! */}
+              <span className="ml-2 text-emerald-500 group-hover:text-emerald-400 font-black transition-colors">+</span>
+            </button>
+          ) : (
+            /* Fallback so the button still appears while Supabase loads */
+            <button 
+              onClick={() => setIsCashierOpen(true)}
+              className="flex items-center justify-center bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 transition-colors rounded-xl px-4 h-10 shadow-inner group"
+            >
+              <span className="text-slate-500 font-bold tracking-wider text-sm animate-pulse">
+                Loading...
+              </span>
             </button>
           )}
-
+          
           {/* Return Button */}
           {!isLobby && (
             <Link 
@@ -116,7 +127,16 @@ export default function Header() {
             </Link>
           )}
           
-          <ConnectButton />
+          <ConnectButton
+            label="Connect Wallet"
+            chainStatus="icon"
+            accountStatus='avatar'
+            showBalance={{
+              smallScreen: false,
+              largeScreen: true,
+            }}
+          />
+
         </div>
       </header>
 
