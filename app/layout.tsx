@@ -5,7 +5,7 @@ import ClientOnly from './components/providers/ClientOnly';
 import Header from './components/Header';
 
 export const metadata: Metadata = {
-  title: 'Project Aegis | Provably Fair Casino',
+  title: 'Aegis | Provably Fair',
   description: 'Next-gen decentralized gaming on Base and Polygon.',
 };
 

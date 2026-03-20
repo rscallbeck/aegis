@@ -1,5 +1,4 @@
 import MinesBoard from '@/app/components/MinesBoard';
-import Link from 'next/link';
 
 export default function MinesPage() {
   return (
