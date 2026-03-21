@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -17,6 +17,7 @@
     "@walletconnect/universal-provider": "^2.23.8",
     "autoprefixer": "^10.4.27",
     "deno": "^2.7.5",
+    "ethers": "^6.16.0",
     "next": "^16.1.7",
     "phaser": "^3.90.0",
     "postcss": "^8.5.8",

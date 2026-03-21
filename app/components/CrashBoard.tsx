@@ -41,8 +41,15 @@ export default function CrashBoard() {
     audio.play().catch(err => console.warn("Audio autoplay blocked by browser:", err));
   };
 
+  /*
   useEffect(() => {
     const socket = io('http://localhost:3001');
+    socketRef.current = socket;
+  */
+
+  useEffect(() => {
+    // 🚨 CHANGED: Now using HTTPS to connect to the secure local server
+    const socket = io('https://localhost:3001'); 
     socketRef.current = socket;
 
     socket.on('connect', () => console.log('✅ Connected to live Crash Engine!'));
